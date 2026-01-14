@@ -1,4 +1,4 @@
-** # Intrusion Detection System (UNSW-NB15 + XGBoost + SMOTE) #**
+# Intrusion Detection System (UNSW-NB15 + XGBoost + SMOTE) #
 
 A machine-learning Intrusion Detection System trained on the UNSW-NB15 cybersecurity dataset to classify network traffic into 10 attack types.
 
