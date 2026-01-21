@@ -109,21 +109,26 @@ with tab1:
 
         pred = model.predict(df_scaled)[0]
         attack = attack_map[pred]
-
+        
         probs = model.predict_proba(df_scaled)[0]
         confidence = max(probs) * 100
 
-        label, level = SEVERITY.get(attack, ("⚠ UNKNOWN", "warning"))
+    st.metric("Detection Confidence", f"{confidence:.2f}%")
 
-        if level == "success":
-            st.success(f"{label}")
-        elif level == "warning":
-            st.warning(f"{label}: {attack}")
-        else:
-            st.error(f"{label}: {attack}")
+    # Safe progress bar
+    progress_value = confidence / 100
+    progress_value = float(max(0.0, min(progress_value, 1.0)))
+    st.progress(progress_value)
 
-        st.metric("Detection Confidence", f"{confidence:.2f}%")
-        st.progress(confidence / 100)
+# 🔽 ADD THIS PART HERE 🔽
+    if confidence < 50:
+        st.warning("⚠ Low confidence detection")
+    elif confidence < 75:
+        st.info("ℹ Medium confidence detection")
+    else:
+    st.success("✅ High confidence detection")
+
+
         st.info(ATTACK_DESC.get(attack, "Unknown traffic behavior detected."))
 
         if "history" not in st.session_state:
@@ -132,7 +137,7 @@ with tab1:
 
 # -------------------- TAB 2 : STATISTICS --------------------
 with tab2:
-    st.subheader("Attack Detection Statistics")
+        st.subheader("Attack Detection Statistics")
 
     if "history" in st.session_state and len(st.session_state.history) > 0:
         hist_df = pd.DataFrame(st.session_state.history, columns=["Attack Type"])
