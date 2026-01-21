@@ -2,20 +2,20 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# -------------------- LOAD MODEL ARTIFACTS --------------------
+# ================== LOAD MODEL ARTIFACTS ==================
 model = joblib.load("ids_multiclass_model.pkl")
 scaler = joblib.load("ids_multiclass_scaler.pkl")
 columns = joblib.load("ids_multiclass_columns.pkl")
 attack_map = joblib.load("ids_attack_classes.pkl")
 
-# -------------------- PAGE CONFIG --------------------
+# ================== PAGE CONFIG ==================
 st.set_page_config(
     page_title="Intrusion Detection System",
     page_icon="🛡️",
     layout="centered"
 )
 
-# -------------------- CONSTANTS --------------------
+# ================== CONSTANTS ==================
 SEVERITY = {
     "Normal": ("🟢 NORMAL", "success"),
     "Reconnaissance": ("🟡 MEDIUM RISK", "warning"),
@@ -40,7 +40,6 @@ ATTACK_DESC = {
     "Analysis": "Traffic showing abnormal analysis patterns."
 }
 
-# Preset attack samples (from real UNSW-style patterns)
 BACKDOOR_SAMPLE = {
     "proto": "ddp",
     "service": "-",
@@ -63,13 +62,13 @@ DOS_SAMPLE = {
     "dttl": 1
 }
 
-# -------------------- UI --------------------
+# ================== UI ==================
 st.title("🛡️ Intrusion Detection System")
-st.caption("UNSW-NB15 | XGBoost | SMOTE | Streamlit Deployment")
+st.caption("UNSW-NB15 | XGBoost | SMOTE | Streamlit")
 
 tab1, tab2, tab3 = st.tabs(["🔍 Detection", "📊 Statistics", "ℹ About"])
 
-# -------------------- TAB 1 : DETECTION --------------------
+# ================== TAB 1 ==================
 with tab1:
     st.subheader("Enter Network Flow Details")
 
@@ -97,6 +96,7 @@ with tab1:
     with col1:
         if st.button("🧪 Test Backdoor Sample"):
             sample = BACKDOOR_SAMPLE
+
     with col2:
         if st.button("🧪 Test DoS Sample"):
             sample = DOS_SAMPLE
@@ -109,35 +109,42 @@ with tab1:
 
         pred = model.predict(df_scaled)[0]
         attack = attack_map[pred]
-        
+
         probs = model.predict_proba(df_scaled)[0]
         confidence = max(probs) * 100
 
-    st.metric("Detection Confidence", f"{confidence:.2f}%")
+        label, level = SEVERITY.get(attack, ("⚠ UNKNOWN", "warning"))
 
-    # Safe progress bar
-    progress_value = confidence / 100
-    progress_value = float(max(0.0, min(progress_value, 1.0)))
-    st.progress(progress_value)
+        if level == "success":
+            st.success(label)
+        elif level == "warning":
+            st.warning(f"{label}: {attack}")
+        else:
+            st.error(f"{label}: {attack}")
 
-# 🔽 ADD THIS PART HERE 🔽
-    if confidence < 50:
-        st.warning("⚠ Low confidence detection")
-    elif confidence < 75:
-        st.info("ℹ Medium confidence detection")
-    else:
-    st.success("✅ High confidence detection")
+        st.metric("Detection Confidence", f"{confidence:.2f}%")
 
+        progress_value = confidence / 100
+        progress_value = float(max(0.0, min(progress_value, 1.0)))
+        st.progress(progress_value)
 
-        st.info(ATTACK_DESC.get(attack, "Unknown traffic behavior detected."))
+        # Confidence label (FIXED indentation)
+        if confidence < 50:
+            st.warning("⚠ Low confidence detection")
+        elif confidence < 75:
+            st.info("ℹ Medium confidence detection")
+        else:
+            st.success("✅ High confidence detection")
+
+        st.info(ATTACK_DESC.get(attack, "Unknown traffic behavior."))
 
         if "history" not in st.session_state:
             st.session_state.history = []
         st.session_state.history.append(attack)
 
-# -------------------- TAB 2 : STATISTICS --------------------
+# ================== TAB 2 ==================
 with tab2:
-        st.subheader("Attack Detection Statistics")
+    st.subheader("Attack Detection Statistics")
 
     if "history" in st.session_state and len(st.session_state.history) > 0:
         hist_df = pd.DataFrame(st.session_state.history, columns=["Attack Type"])
@@ -147,18 +154,17 @@ with tab2:
     else:
         st.write("No detections yet.")
 
-# -------------------- TAB 3 : ABOUT --------------------
+# ================== TAB 3 ==================
 with tab3:
     st.markdown("""
-    **Intrusion Detection System (IDS)**  
-    - Trained on UNSW-NB15 dataset  
-    - Multi-class classification (10 attack families)  
-    - Handles class imbalance using SMOTE  
-    - Deployed using Streamlit  
+    **Intrusion Detection System**
+    - Dataset: UNSW-NB15  
+    - Model: XGBoost (SMOTE balanced)  
+    - Multi-class attack detection  
+    - Streamlit deployment  
 
-    **Use Case:**  
-    Real-time traffic classification for SOC monitoring, research, and demos.
+    Designed for cybersecurity monitoring, research, and demonstrations.
     """)
 
 st.markdown("---")
-st.caption("Developed by Shreya Gawade | ML & Cybersecurity Project")
+st.caption("Developed by Shreya Gawade")
